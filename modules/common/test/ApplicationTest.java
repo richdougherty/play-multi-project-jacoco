@@ -21,6 +21,14 @@ import play.test.Helpers;
 */
 public class ApplicationTest {
 
+    public static File relativeToBaseDir(String path) {
+        String baseDir = System.getProperty("play.base.dir");
+        if (baseDir == null) {
+            throw new NullPointerException("The play.base.dir property must be set so that relative paths can be resolved.");
+        }
+        return new File(baseDir, path);
+    }
+
     @Test
     public void simpleCheck() {
         int a = 1 + 1;
@@ -36,7 +44,7 @@ public class ApplicationTest {
 
     @Test
     public void workingDirectoryShouldBeConstant() {
-        FakeApplication app = new FakeApplication(new java.io.File("."),
+        FakeApplication app = new FakeApplication(relativeToBaseDir("."),
                 Helpers.class.getClassLoader(), new HashMap<String, String>(), new ArrayList<String>(), null);
         
         File testData = app.getWrappedApplication().getFile("./test/resources/test-data.txt");

@@ -45,7 +45,14 @@ object ApplicationBuild extends Build {
       
   val common = play.Project(
       "common", appVersion, commonDependencies, settings = s, path = file("modules/common")    
-  ) 
+  ).settings(
+      javaOptions in Test += s"-Dplay.base.dir=${baseDirectory.value}",
+      test in jacoco.Config := {
+        System.setProperty("play.base.dir", baseDirectory.value.toString)
+        test in jacoco.Config
+        System.clearProperty("play.base.dir")
+      }
+  )
     
   val appDependencies = Seq(
       javaJdbc,
