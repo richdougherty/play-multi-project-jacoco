@@ -15,7 +15,7 @@ object ApplicationBuild extends Build {
       jacoco.excludes in jacoco.Config := Seq("Routes*","*Reverse*","*anonfun*")//,
       
       // Workaround 
-//      Keys.fork in jacoco.Config := true,
+//      Keys.fork in jacoco.Config := false
 
       // Workaround to run jacoco in current working directory
 //      testGrouping in jacoco.Config := {
@@ -42,11 +42,18 @@ object ApplicationBuild extends Build {
   val commonDependencies = Seq(
       javaCore
       )
-      
+
   val common = play.Project(
       "common", appVersion, commonDependencies, settings = s, path = file("modules/common")    
-  ) 
-    
+  ).settings(
+      javaOptions in Test += s"-Dplay.base.dir=${baseDirectory.value}",
+      testOptions in jacoco.Config ++= Seq(
+        Tests.Setup { () => System.setProperty("play.base.dir", baseDirectory.value.toString) },
+        Tests.Cleanup { () => System.clearProperty("plase.base.dir") }
+      ),
+      concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
+  )
+
   val appDependencies = Seq(
       javaJdbc,
       javaEbean,
