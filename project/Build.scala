@@ -37,21 +37,38 @@ object ApplicationBuild extends Build {
 //      }
     )
     
+  val PlayBaseDirProp = Tags.Tag("PlayBaseDirProp")
+  concurrentRestrictions in Global += Tags.limit(PlayBaseDirProp, 1)
+
+  def withSystemProperty[T](name: String, value: String)(f: => T) = {
+    System.setProperty(name, value)
+    try {
+      f
+    } finally {
+      System.clearProperty(name)
+    }
+  }
+
+  def withPlayBaseDir[T](taskKey: TaskKey[T]) = {
+    def taggedPropTask = Def.task {
+      withSystemProperty("play.base.dir", baseDirectory.value.toString) {
+        taskKey.value
+      }
+    } tag(PlayBaseDirProp)
+    taskKey := taggedPropTask.value
+  }
+
   lazy val s = playJavaSettings ++ Seq(jacoco.settings:_*) ++ jacocoSettings
   
   val commonDependencies = Seq(
       javaCore
       )
-      
+
   val common = play.Project(
       "common", appVersion, commonDependencies, settings = s, path = file("modules/common")    
   ).settings(
       javaOptions in Test += s"-Dplay.base.dir=${baseDirectory.value}",
-      test in jacoco.Config := {
-        System.setProperty("play.base.dir", baseDirectory.value.toString)
-        test in jacoco.Config
-        System.clearProperty("play.base.dir")
-      }
+      withPlayBaseDir(test in jacoco.Config)
   )
     
   val appDependencies = Seq(
